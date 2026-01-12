@@ -1,6 +1,9 @@
-import { prisma } from "../utils/prisma";
-import { getIO } from "../socket";
-export const placeOrder = async (req, res) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMyOrders = exports.placeOrder = void 0;
+const prisma_1 = require("../utils/prisma");
+const socket_1 = require("../socket");
+const placeOrder = async (req, res) => {
     try {
         const userId = req.session.userId;
         const { items, addressId } = req.body;
@@ -14,7 +17,7 @@ export const placeOrder = async (req, res) => {
             return res.status(400).json({ message: "Cart is empty" });
         }
         // ✅ Verify address belongs to user
-        const address = await prisma.address.findFirst({
+        const address = await prisma_1.prisma.address.findFirst({
             where: { id: addressId, userId },
         });
         if (!address) {
@@ -23,7 +26,7 @@ export const placeOrder = async (req, res) => {
         let subtotal = 0;
         const orderItems = [];
         for (const item of items) {
-            const menuItem = await prisma.menuItem.findUnique({
+            const menuItem = await prisma_1.prisma.menuItem.findUnique({
                 where: { id: item.menuItemId },
                 include: {
                     options: { include: { values: true } },
@@ -56,7 +59,7 @@ export const placeOrder = async (req, res) => {
         const discount = 0;
         const total = subtotal + tax + delivery - discount;
         // ✅ CREATE ORDER
-        const order = await prisma.order.create({
+        const order = await prisma_1.prisma.order.create({
             data: {
                 userId,
                 addressId,
@@ -71,7 +74,7 @@ export const placeOrder = async (req, res) => {
             },
         });
         // 🔥 SOCKET EVENT (ADMIN)
-        const io = getIO();
+        const io = (0, socket_1.getIO)();
         io.emit("new-order", {
             orderId: order.id,
             total: order.total,
@@ -85,13 +88,14 @@ export const placeOrder = async (req, res) => {
         return res.status(500).json({ message: "Order placement failed" });
     }
 };
-export const getMyOrders = async (req, res) => {
+exports.placeOrder = placeOrder;
+const getMyOrders = async (req, res) => {
     try {
         const userId = req.session.userId;
         if (!userId) {
             return res.status(401).json({ message: "Not authenticated" });
         }
-        const orders = await prisma.order.findMany({
+        const orders = await prisma_1.prisma.order.findMany({
             where: { userId },
             include: {
                 address: true, // 🔥 REQUIRED
@@ -109,3 +113,4 @@ export const getMyOrders = async (req, res) => {
         return res.status(500).json({ message: "Failed to fetch orders" });
     }
 };
+exports.getMyOrders = getMyOrders;

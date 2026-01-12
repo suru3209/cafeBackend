@@ -1,8 +1,13 @@
-import { Router } from "express";
-import { prisma } from "../utils/prisma";
-import bcrypt from "bcrypt";
-import { isAuth } from "../middlewares/isAuth";
-const router = Router();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const prisma_1 = require("../utils/prisma");
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const isAuth_1 = require("../middlewares/isAuth");
+const router = (0, express_1.Router)();
 // ADMIN LOGIN WITH SECRET CODE
 router.post("/login", async (req, res) => {
     try {
@@ -19,7 +24,7 @@ router.post("/login", async (req, res) => {
                 message: "Invalid admin secret code",
             });
         }
-        const user = await prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { email },
         });
         if (!user) {
@@ -29,7 +34,7 @@ router.post("/login", async (req, res) => {
         if (user.role !== "ADMIN") {
             return res.status(403).json({ message: "Admin access only" });
         }
-        const match = await bcrypt.compare(password, user.password);
+        const match = await bcrypt_1.default.compare(password, user.password);
         if (!match) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
@@ -64,12 +69,12 @@ router.post("/signup", async (req, res) => {
         if (!name || !email || !password) {
             return res.status(400).json({ message: "All fields are required" });
         }
-        const existing = await prisma.user.findUnique({ where: { email } });
+        const existing = await prisma_1.prisma.user.findUnique({ where: { email } });
         if (existing) {
             return res.status(409).json({ message: "Admin already exists" });
         }
-        const hashed = await bcrypt.hash(password, 10);
-        const admin = await prisma.user.create({
+        const hashed = await bcrypt_1.default.hash(password, 10);
+        const admin = await prisma_1.prisma.user.create({
             data: {
                 name,
                 email,
@@ -95,11 +100,11 @@ router.post("/signup", async (req, res) => {
         res.status(500).json({ message: "Admin signup failed" });
     }
 });
-router.get("/me", isAuth, async (req, res) => {
+router.get("/me", isAuth_1.isAuth, async (req, res) => {
     try {
         if (!req.session.userId)
             return res.status(401).json({ user: null });
-        const user = await prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { id: req.session.userId },
             select: {
                 id: true,
@@ -132,4 +137,4 @@ router.post("/logout", (req, res) => {
         res.json({ success: true });
     });
 });
-export default router;
+exports.default = router;

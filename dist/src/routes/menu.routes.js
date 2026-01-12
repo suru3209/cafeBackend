@@ -1,13 +1,15 @@
-import { Router } from "express";
-import { prisma } from "../utils/prisma";
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const prisma_1 = require("../utils/prisma");
+const router = (0, express_1.Router)();
 /**
  * GET /menu
  * Returns menu items with category & options
  */
 router.get("/", async (_req, res) => {
     try {
-        const items = await prisma.menuItem.findMany({
+        const items = await prisma_1.prisma.menuItem.findMany({
             where: {
                 isAvailable: true,
             },
@@ -61,4 +63,4 @@ router.get("/", async (_req, res) => {
         });
     }
 });
-export default router;
+exports.default = router;

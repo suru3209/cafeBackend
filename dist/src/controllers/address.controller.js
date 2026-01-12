@@ -1,8 +1,11 @@
-import { prisma } from "../utils/prisma";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteAddress = exports.updateAddress = exports.getMyAddresses = exports.createAddress = void 0;
+const prisma_1 = require("../utils/prisma");
 /**
  * ➕ Create new address
  */
-export const createAddress = async (req, res) => {
+const createAddress = async (req, res) => {
     try {
         const userId = req.session.userId;
         const { label, address, city, state, zipCode, latitude, longitude, isDefault, } = req.body;
@@ -25,17 +28,17 @@ export const createAddress = async (req, res) => {
             });
         }
         // 🔹 First address OR explicitly default
-        const count = await prisma.address.count({
+        const count = await prisma_1.prisma.address.count({
             where: { userId },
         });
         const shouldBeDefault = count === 0 || isDefault === true;
         if (shouldBeDefault) {
-            await prisma.address.updateMany({
+            await prisma_1.prisma.address.updateMany({
                 where: { userId },
                 data: { isDefault: false },
             });
         }
-        const newAddress = await prisma.address.create({
+        const newAddress = await prisma_1.prisma.address.create({
             data: {
                 userId,
                 label,
@@ -61,10 +64,11 @@ export const createAddress = async (req, res) => {
         });
     }
 };
+exports.createAddress = createAddress;
 /**
  * 📥 Get logged-in user's addresses
  */
-export const getMyAddresses = async (req, res) => {
+const getMyAddresses = async (req, res) => {
     try {
         const userId = req.session.userId;
         if (!userId) {
@@ -73,7 +77,7 @@ export const getMyAddresses = async (req, res) => {
                 message: "Unauthorized",
             });
         }
-        const addresses = await prisma.address.findMany({
+        const addresses = await prisma_1.prisma.address.findMany({
             where: { userId },
             orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
         });
@@ -90,10 +94,11 @@ export const getMyAddresses = async (req, res) => {
         });
     }
 };
+exports.getMyAddresses = getMyAddresses;
 /**
  * ✏️ Update address
  */
-export const updateAddress = async (req, res) => {
+const updateAddress = async (req, res) => {
     try {
         const userId = req.session.userId;
         const id = typeof req.params.id === 'string' ? req.params.id : req.params.id[0];
@@ -104,7 +109,7 @@ export const updateAddress = async (req, res) => {
                 message: "Unauthorized",
             });
         }
-        const existing = await prisma.address.findFirst({
+        const existing = await prisma_1.prisma.address.findFirst({
             where: { id, userId },
         });
         if (!existing) {
@@ -114,12 +119,12 @@ export const updateAddress = async (req, res) => {
             });
         }
         if (isDefault === true) {
-            await prisma.address.updateMany({
+            await prisma_1.prisma.address.updateMany({
                 where: { userId },
                 data: { isDefault: false },
             });
         }
-        const updated = await prisma.address.update({
+        const updated = await prisma_1.prisma.address.update({
             where: { id },
             data: {
                 label: label ?? existing.label,
@@ -145,17 +150,18 @@ export const updateAddress = async (req, res) => {
         });
     }
 };
+exports.updateAddress = updateAddress;
 /**
  * 🗑️ Delete address
  */
-export const deleteAddress = async (req, res) => {
+const deleteAddress = async (req, res) => {
     try {
         const userId = req.session.userId;
         const id = typeof req.params.id === 'string' ? req.params.id : req.params.id[0];
         if (!userId) {
             return res.status(401).json({ success: false, message: "Unauthorized" });
         }
-        const existing = await prisma.address.findFirst({
+        const existing = await prisma_1.prisma.address.findFirst({
             where: { id, userId },
             include: { orders: true },
         });
@@ -170,7 +176,7 @@ export const deleteAddress = async (req, res) => {
                 message: "This address is used in orders and cannot be deleted",
             });
         }
-        await prisma.address.delete({ where: { id } });
+        await prisma_1.prisma.address.delete({ where: { id } });
         return res.json({ success: true });
     }
     catch (error) {
@@ -180,3 +186,4 @@ export const deleteAddress = async (req, res) => {
             .json({ success: false, message: "Failed to delete address" });
     }
 };
+exports.deleteAddress = deleteAddress;

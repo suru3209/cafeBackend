@@ -1,8 +1,13 @@
-import { Router } from "express";
-import { prisma } from "../utils/prisma";
-import bcrypt from "bcrypt";
-import { isAuth } from "../middlewares/isAuth";
-const router = Router();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const prisma_1 = require("../utils/prisma");
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const isAuth_1 = require("../middlewares/isAuth");
+const router = (0, express_1.Router)();
 //signup
 router.post("/signup", async (req, res) => {
     try {
@@ -12,16 +17,16 @@ router.post("/signup", async (req, res) => {
             return res.status(400).json({ message: "All fileds are required" });
         }
         //check if user already exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        const existingUser = await prisma_1.prisma.user.findUnique({ where: { email } });
         if (existingUser) {
             return res
                 .status(409)
                 .json({ message: "User already exists with this email" });
         }
         // Hash password
-        const hashed = await bcrypt.hash(password, 10);
+        const hashed = await bcrypt_1.default.hash(password, 10);
         // Create user
-        const user = await prisma.user.create({
+        const user = await prisma_1.prisma.user.create({
             data: { name, email, password: hashed },
         });
         // Create session
@@ -54,10 +59,10 @@ router.post("/login", async (req, res) => {
                 .json({ message: "Email and password are required" });
         }
         //find user
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma_1.prisma.user.findUnique({ where: { email } });
         if (!user)
             return res.status(400).json({ message: "Invalid credentials" });
-        const match = await bcrypt.compare(password, user.password);
+        const match = await bcrypt_1.default.compare(password, user.password);
         if (!match)
             return res.status(400).json({ message: "Invalid credentials" });
         //Create session
@@ -80,11 +85,11 @@ router.post("/login", async (req, res) => {
     }
 });
 //me
-router.get("/me", isAuth, async (req, res) => {
+router.get("/me", isAuth_1.isAuth, async (req, res) => {
     try {
         if (!req.session.userId)
             return res.status(401).json({ user: null });
-        const user = await prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { id: req.session.userId },
             select: {
                 id: true,
@@ -120,7 +125,7 @@ router.post("/logout", (req, res) => {
 //check-email
 router.post("/check-email", async (req, res) => {
     const { email } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma_1.prisma.user.findUnique({ where: { email } });
     res.json({ exists: !!user });
 });
-export default router;
+exports.default = router;

@@ -1,14 +1,16 @@
-import { Router } from "express";
-import { prisma } from "../utils/prisma";
-import { isAuth } from "../middlewares/isAuth";
-import { upload } from "../utils/upload";
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const prisma_1 = require("../utils/prisma");
+const isAuth_1 = require("../middlewares/isAuth");
+const upload_1 = require("../utils/upload");
+const router = (0, express_1.Router)();
 /* =========================
    GET ALL PRODUCTS
 ========================= */
-router.get("/", isAuth, async (_, res) => {
+router.get("/", isAuth_1.isAuth, async (_, res) => {
     try {
-        const products = await prisma.menuItem.findMany({
+        const products = await prisma_1.prisma.menuItem.findMany({
             include: {
                 category: true,
                 options: { include: { values: true } },
@@ -25,10 +27,10 @@ router.get("/", isAuth, async (_, res) => {
 /* =========================
    CREATE PRODUCT
 ========================= */
-router.post("/", isAuth, upload.single("image"), async (req, res) => {
+router.post("/", isAuth_1.isAuth, upload_1.upload.single("image"), async (req, res) => {
     try {
         const { name, description, basePrice, categoryId, isVeg, options } = req.body;
-        const product = await prisma.menuItem.create({
+        const product = await prisma_1.prisma.menuItem.create({
             data: {
                 name,
                 description,
@@ -60,14 +62,14 @@ router.post("/", isAuth, upload.single("image"), async (req, res) => {
 /* =========================
    GET SINGLE PRODUCT
 ========================= */
-router.get("/:id", isAuth, async (req, res) => {
+router.get("/:id", isAuth_1.isAuth, async (req, res) => {
     try {
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
         if (!id) {
             return res.status(400).json({ message: "Product id is required" });
         }
         const productId = id;
-        const product = await prisma.menuItem.findUnique({
+        const product = await prisma_1.prisma.menuItem.findUnique({
             where: { id: productId },
             include: {
                 options: { include: { values: true } },
@@ -87,7 +89,7 @@ router.get("/:id", isAuth, async (req, res) => {
 /* =========================
    UPDATE PRODUCT + OPTIONS
 ========================= */
-router.put("/:id", isAuth, upload.single("image"), async (req, res) => {
+router.put("/:id", isAuth_1.isAuth, upload_1.upload.single("image"), async (req, res) => {
     try {
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
         if (!id) {
@@ -96,7 +98,7 @@ router.put("/:id", isAuth, upload.single("image"), async (req, res) => {
         const productId = id;
         const { name, description, basePrice, isVeg, isAvailable, options } = req.body;
         // 1️⃣ Update product
-        await prisma.menuItem.update({
+        await prisma_1.prisma.menuItem.update({
             where: { id: productId },
             data: {
                 name,
@@ -108,14 +110,14 @@ router.put("/:id", isAuth, upload.single("image"), async (req, res) => {
             },
         });
         // 2️⃣ Delete old options (cascade deletes values)
-        await prisma.menuOption.deleteMany({
+        await prisma_1.prisma.menuOption.deleteMany({
             where: { menuItemId: productId },
         });
         // 3️⃣ Re-create options safely
         if (options) {
             const parsedOptions = typeof options === "string" ? JSON.parse(options) : options;
             for (const opt of parsedOptions) {
-                await prisma.menuOption.create({
+                await prisma_1.prisma.menuOption.create({
                     data: {
                         name: opt.name,
                         required: opt.required ?? false,
@@ -140,14 +142,14 @@ router.put("/:id", isAuth, upload.single("image"), async (req, res) => {
 /* =========================
    DELETE PRODUCT (CASCADE)
 ========================= */
-router.delete("/:id", isAuth, async (req, res) => {
+router.delete("/:id", isAuth_1.isAuth, async (req, res) => {
     try {
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
         if (!id) {
             return res.status(400).json({ message: "Product id is required" });
         }
         const productId = id;
-        await prisma.menuItem.delete({
+        await prisma_1.prisma.menuItem.delete({
             where: { id: productId },
         });
         res.json({ success: true, message: "Product deleted" });
@@ -157,4 +159,4 @@ router.delete("/:id", isAuth, async (req, res) => {
         res.status(500).json({ message: "Delete failed" });
     }
 });
-export default router;
+exports.default = router;

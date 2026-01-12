@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx src/app.ts",
     "build": "prisma generate && tsc",
-    "start": "node --experimental-specifier-resolution=node dist/app.js",
+    "start": "node dist/src/app.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts"
@@ -17,7 +17,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-"type": "commonjs",
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",

@@ -1,11 +1,13 @@
-import { Router } from "express";
-import { prisma } from "../utils/prisma";
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const prisma_1 = require("../utils/prisma");
+const router = (0, express_1.Router)();
 //get all categories
 router.get("/", async (req, res) => {
-    const categories = await prisma.category.findMany({
+    const categories = await prisma_1.prisma.category.findMany({
         orderBy: { name: "asc" },
     });
     res.json({ success: true, categories });
 });
-export default router;
+exports.default = router;

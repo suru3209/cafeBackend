@@ -1,46 +1,51 @@
-import express from "express";
-import cors from "cors";
-import session from "express-session";
-import dotenv from "dotenv";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import http from "http";
-import authRoutes from "./routes/auth.routes";
-import categoryRoutes from "./routes/category.routes";
-import menuRoutes from "./routes/menu.routes";
-import userRoutes from "./routes/user.routes";
-import orderRoutes from "./routes/order.routes";
-import invoiceRoutes from "./routes/invoice.routes";
-import addressRoutes from "./routes/address.routes";
-import adminAuthroutes from "./routes/adminAuth.routes";
-import adminOrderRoutes from "./routes/adminOrder.routes";
-import adminProductRoutes from "./routes/adminProduct.routes";
-import { initSocket } from "./socket";
-dotenv.config();
-const app = express();
-const server = http.createServer(app);
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
+const express_session_1 = __importDefault(require("express-session"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const helmet_1 = __importDefault(require("helmet"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const http_1 = __importDefault(require("http"));
+const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
+const category_routes_1 = __importDefault(require("./routes/category.routes"));
+const menu_routes_1 = __importDefault(require("./routes/menu.routes"));
+const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const order_routes_1 = __importDefault(require("./routes/order.routes"));
+const invoice_routes_1 = __importDefault(require("./routes/invoice.routes"));
+const address_routes_1 = __importDefault(require("./routes/address.routes"));
+const adminAuth_routes_1 = __importDefault(require("./routes/adminAuth.routes"));
+const adminOrder_routes_1 = __importDefault(require("./routes/adminOrder.routes"));
+const adminProduct_routes_1 = __importDefault(require("./routes/adminProduct.routes"));
+const socket_1 = require("./socket");
+dotenv_1.default.config();
+const app = (0, express_1.default)();
+const server = http_1.default.createServer(app);
 // 🔥 Socket Init
-initSocket(server);
+(0, socket_1.initSocket)(server);
 // ====================
 // 🔐 SECURITY MIDDLEWARE
 // ====================
-app.use(helmet());
-app.use(cors({
+app.use((0, helmet_1.default)());
+app.use((0, cors_1.default)({
     origin: process.env.CLIENT_URL, // production me apna domain
     credentials: true,
 }));
 // ====================
 // 🚫 RATE LIMIT
 // ====================
-app.use(rateLimit({
+app.use((0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000,
     max: 100,
 }));
 // ====================
 // 🧠 BODY + SESSION
 // ====================
-app.use(express.json());
-app.use(session({
+app.use(express_1.default.json());
+app.use((0, express_session_1.default)({
     name: "aniicones.sid",
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -55,21 +60,21 @@ app.use(session({
 // ====================
 // 📁 STATIC FILES
 // ====================
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express_1.default.static("uploads"));
 // ====================
 // 🚀 ROUTES
 // ====================
-app.use("/api/auth", authRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/menu", menuRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/invoice", invoiceRoutes);
-app.use("/api/addresses", addressRoutes);
+app.use("/api/auth", auth_routes_1.default);
+app.use("/api/orders", order_routes_1.default);
+app.use("/api/categories", category_routes_1.default);
+app.use("/api/menu", menu_routes_1.default);
+app.use("/api/user", user_routes_1.default);
+app.use("/api/invoice", invoice_routes_1.default);
+app.use("/api/addresses", address_routes_1.default);
 // ADMIN
-app.use("/api/admin/auth", adminAuthroutes);
-app.use("/api/admin/orders", adminOrderRoutes);
-app.use("/api/admin/products", adminProductRoutes);
+app.use("/api/admin/auth", adminAuth_routes_1.default);
+app.use("/api/admin/orders", adminOrder_routes_1.default);
+app.use("/api/admin/products", adminProduct_routes_1.default);
 // ====================
 // 🏠 ROOT
 // ====================

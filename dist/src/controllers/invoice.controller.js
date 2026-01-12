@@ -1,14 +1,20 @@
-import { prisma } from "../utils/prisma";
-import PDFDocument from "pdfkit";
-import dayjs from "dayjs";
-import path from "path";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateInvoice = void 0;
+const prisma_1 = require("../utils/prisma");
+const pdfkit_1 = __importDefault(require("pdfkit"));
+const dayjs_1 = __importDefault(require("dayjs"));
+const path_1 = __importDefault(require("path"));
 /**
  * Generate Invoice PDF
  */
-export const generateInvoice = async (req, res) => {
+const generateInvoice = async (req, res) => {
     try {
         const { orderId } = req.params;
-        const order = await prisma.order.findUnique({
+        const order = await prisma_1.prisma.order.findUnique({
             where: { id: Array.isArray(orderId) ? orderId[0] : orderId },
             include: {
                 user: { select: { name: true, email: true } },
@@ -29,12 +35,12 @@ export const generateInvoice = async (req, res) => {
         const delivery = order.delivery; // should be 7000 (₹70)
         const total = order.total;
         const rs = (p) => `₹${(p / 100).toFixed(2)}`;
-        const doc = new PDFDocument({ size: "A4", margin: 50 });
+        const doc = new pdfkit_1.default({ size: "A4", margin: 50 });
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `inline; filename=invoice-${order.id}.pdf`);
         doc.pipe(res);
         /* ================= LOGO ================= */
-        const logoPath = path.join(__dirname, "../public/logo.png");
+        const logoPath = path_1.default.join(__dirname, "../public/logo.png");
         try {
             doc.image(logoPath, 50, 40, { width: 80 });
         }
@@ -49,7 +55,7 @@ export const generateInvoice = async (req, res) => {
         /* ================= CUSTOMER INFO ================= */
         doc.fontSize(11);
         doc.text(`Invoice ID: ${order.id}`);
-        doc.text(`Date: ${dayjs(order.createdAt).format("DD MMM YYYY, hh:mm A")}`);
+        doc.text(`Date: ${(0, dayjs_1.default)(order.createdAt).format("DD MMM YYYY, hh:mm A")}`);
         doc.text(`Customer: ${order.user.name}`);
         doc.text(`Email: ${order.user.email}`);
         doc.moveDown();
@@ -93,3 +99,4 @@ ${order.address.city}, ${order.address.state} - ${order.address.zipCode}`);
         res.status(500).json({ message: "Failed to generate invoice" });
     }
 };
+exports.generateInvoice = generateInvoice;

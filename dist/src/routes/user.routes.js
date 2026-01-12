@@ -1,11 +1,13 @@
-import { Router } from "express";
-import { prisma } from "../utils/prisma";
-import { isAuth } from "../middlewares/isAuth";
-const router = Router();
-router.put("/update-profile", isAuth, async (req, res) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const prisma_1 = require("../utils/prisma");
+const isAuth_1 = require("../middlewares/isAuth");
+const router = (0, express_1.Router)();
+router.put("/update-profile", isAuth_1.isAuth, async (req, res) => {
     try {
         const { name, email } = req.body;
-        const user = await prisma.user.update({
+        const user = await prisma_1.prisma.user.update({
             where: { id: req.session.userId },
             data: { name, email },
             select: {
@@ -21,4 +23,4 @@ router.put("/update-profile", isAuth, async (req, res) => {
         res.status(500).json({ message: "Failed to update profile" });
     }
 });
-export default router;
+exports.default = router;
