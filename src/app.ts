@@ -65,9 +65,48 @@ initSocket(server);
 app.set("trust proxy", 1);
 
 // ====================
+// 🌍 CORS (Must be before helmet)
+// ====================
+// CORS configuration with fallback for Railway
+const corsOrigin = process.env.CLIENT_URL || (isProduction ? false : "http://localhost:3000");
+
+if (!corsOrigin && isProduction) {
+  console.warn("⚠️  WARNING: CLIENT_URL not set in production. CORS may not work correctly.");
+}
+
+// Enhanced CORS configuration for Railway
+app.use(
+  cors({
+    origin: corsOrigin,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    maxAge: 86400, // 24 hours
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  })
+);
+
+// Handle preflight requests explicitly
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", corsOrigin as string);
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Max-Age", "86400");
+  res.sendStatus(204);
+});
+
+// ====================
 // 🔐 SECURITY
 // ====================
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 const PgStore = pgSession(session);
 
@@ -116,23 +155,6 @@ process.on("SIGINT", async () => {
 process.on("SIGTERM", async () => {
   await pool.end();
 });
-
-// ====================
-// 🌍 CORS
-// ====================
-// CORS configuration with fallback for Railway
-const corsOrigin = process.env.CLIENT_URL || (isProduction ? false : "http://localhost:3000");
-
-if (!corsOrigin && isProduction) {
-  console.warn("⚠️  WARNING: CLIENT_URL not set in production. CORS may not work correctly.");
-}
-
-app.use(
-  cors({
-    origin: corsOrigin,
-    credentials: true,
-  })
-);
 
 // ====================
 // 🚫 RATE LIMIT
