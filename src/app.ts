@@ -51,8 +51,11 @@ app.use(helmet());
 
 const PgStore = pgSession(session);
 
-// Clean connection string and create pool with SSL config for self-signed certs
+// Clean connection string and create pool with SSL config
 let sessionConnectionString = process.env.DATABASE_URL || "";
+
+const isProduction = process.env.NODE_ENV === "production";
+const isRailway = process.env.RAILWAY_ENVIRONMENT === "production" || process.env.RAILWAY_ENVIRONMENT_NAME;
 
 // Remove any existing sslmode parameters from connection string
 // We'll handle SSL through Pool config instead
@@ -65,11 +68,19 @@ try {
   // If URL parsing fails, use original connection string
 }
 
+// Configure SSL based on environment
+const sslConfig = isProduction && !isRailway
+  ? { rejectUnauthorized: true }
+  : { rejectUnauthorized: false };
+
 const pool = new pg.Pool({
   connectionString: sessionConnectionString,
-  ssl: { 
-    rejectUnauthorized: false, // Allow self-signed certificates
-  },
+  ssl: sslConfig,
+  // Railway/production optimized settings
+  max: 20,
+  min: 2,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000, // Increased timeout for Railway
 });
 
 // ====================
