@@ -87,7 +87,7 @@ ${order.address.city}, ${order.address.state} - ${order.address.zipCode}`
     doc.font("Helvetica");
 
     /* ================= ITEMS ================= */
-    order.items.forEach((item) => {
+    order.items.forEach((item: (typeof order.items)[number]) => {
       doc.text(item.menuItem.name, 50);
       doc.text(item.quantity.toString(), 280);
       doc.text(rs(item.price), 340);
