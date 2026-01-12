@@ -86,8 +86,9 @@ try {
 }
 
 // Configure SSL based on environment
+// Railway sometimes has certificate chain issues, so we allow self-signed for Railway
 const sslConfig = isRailway
-  ? { rejectUnauthorized: true } // Railway uses proper SSL certificates
+  ? { rejectUnauthorized: false } // Railway may have certificate chain issues
   : isProduction
   ? { rejectUnauthorized: true }
   : { rejectUnauthorized: false }; // Development only
