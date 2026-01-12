@@ -21,8 +21,28 @@ import adminOrderRoutes from "./routes/adminOrder.routes";
 import adminProductRoutes from "./routes/adminProduct.routes";
 
 import { initSocket } from "./socket";
+import { prisma } from "./utils/prisma";
 
 dotenv.config();
+
+// Environment detection
+const isProduction = process.env.NODE_ENV === "production";
+const isRailway = !!(
+  process.env.RAILWAY_ENVIRONMENT ||
+  process.env.RAILWAY_ENVIRONMENT_NAME ||
+  process.env.RAILWAY_PROJECT_ID
+);
+
+// Validate required environment variables
+const requiredEnvVars = ["DATABASE_URL", "SESSION_SECRET"];
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+
+if (missingEnvVars.length > 0) {
+  console.error("❌ Missing required environment variables:", missingEnvVars.join(", "));
+  if (isProduction) {
+    console.error("⚠️  Application may not work correctly without these variables.");
+  }
+}
 
 declare module "express-session" {
   interface SessionData {
@@ -53,13 +73,6 @@ const PgStore = pgSession(session);
 
 // Clean connection string and create pool with SSL config
 let sessionConnectionString = process.env.DATABASE_URL || "";
-
-const isProduction = process.env.NODE_ENV === "production";
-const isRailway = !!(
-  process.env.RAILWAY_ENVIRONMENT ||
-  process.env.RAILWAY_ENVIRONMENT_NAME ||
-  process.env.RAILWAY_PROJECT_ID
-);
 
 // Remove any existing sslmode parameters from connection string
 // We'll handle SSL through Pool config instead
@@ -106,9 +119,16 @@ process.on("SIGTERM", async () => {
 // ====================
 // 🌍 CORS
 // ====================
+// CORS configuration with fallback for Railway
+const corsOrigin = process.env.CLIENT_URL || (isProduction ? false : "http://localhost:3000");
+
+if (!corsOrigin && isProduction) {
+  console.warn("⚠️  WARNING: CLIENT_URL not set in production. CORS may not work correctly.");
+}
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: corsOrigin,
     credentials: true,
   })
 );
@@ -129,12 +149,13 @@ app.use(
 app.use(
   session({
     store: new PgStore({ pool }),
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || "fallback-secret-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax", // Railway needs 'none' for cross-origin
       maxAge: 1000 * 60 * 60 * 24,
     },
   })
@@ -162,10 +183,34 @@ app.use("/api/admin/orders", adminOrderRoutes);
 app.use("/api/admin/products", adminProductRoutes);
 
 // ====================
-// 🏠 ROOT
+// 🏠 ROOT & HEALTH CHECK
 // ====================
 app.get("/", (req, res) => {
-  res.send("Aniicones Cafe Backend Running 🚀");
+  res.json({ 
+    message: "Aniicones Cafe Backend Running 🚀",
+    status: "ok",
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Health check endpoint for Railway
+app.get("/health", async (req, res) => {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ 
+      status: "healthy",
+      database: "connected",
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(503).json({ 
+      status: "unhealthy",
+      database: "disconnected",
+      error: isProduction ? undefined : (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // ====================
@@ -179,8 +224,17 @@ app.use((req, res) => {
 // ⚠️ ERROR HANDLER
 // ====================
 app.use((err: any, req: any, res: any, next: any) => {
-  console.error(err);
-  res.status(500).json({ message: "Internal Server Error" });
+  console.error("Error:", err);
+  
+  // Don't leak error details in production
+  const message = isProduction 
+    ? "Internal Server Error" 
+    : err.message || "Internal Server Error";
+  
+  res.status(err.status || 500).json({ 
+    message,
+    ...(isProduction ? {} : { stack: err.stack })
+  });
 });
 
 // ====================
@@ -190,4 +244,9 @@ const PORT = process.env.PORT || 8080;
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📍 Environment: ${isProduction ? "Production" : "Development"}`);
+  console.log(`🚂 Railway: ${isRailway ? "Yes" : "No"}`);
+  if (corsOrigin) {
+    console.log(`🌐 CORS Origin: ${corsOrigin}`);
+  }
 });

@@ -4,9 +4,12 @@ import http from "http";
 let io: Server;
 
 export const initSocket = (server: http.Server) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  const corsOrigin = process.env.CLIENT_URL || (isProduction ? false : "http://localhost:3000");
+  
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origin: corsOrigin,
       credentials: true,
     },
   });

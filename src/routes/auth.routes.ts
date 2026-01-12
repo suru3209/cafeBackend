@@ -139,11 +139,20 @@ router.post("/logout", (req, res) => {
 
 //check-email
 router.post("/check-email", async (req, res) => {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
 
-  res.json({ exists: !!user });
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    res.json({ exists: !!user });
+  } catch (error) {
+    console.error("Check email error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 export default router;
