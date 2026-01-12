@@ -75,6 +75,7 @@ if (!corsOrigin && isProduction) {
 }
 
 // Enhanced CORS configuration for Railway
+// cors package automatically handles preflight OPTIONS requests
 app.use(
   cors({
     origin: corsOrigin,
@@ -87,16 +88,6 @@ app.use(
     optionsSuccessStatus: 204,
   })
 );
-
-// Handle preflight requests explicitly
-app.options("*", (req, res) => {
-  res.header("Access-Control-Allow-Origin", corsOrigin as string);
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Max-Age", "86400");
-  res.sendStatus(204);
-});
 
 // ====================
 // 🔐 SECURITY
