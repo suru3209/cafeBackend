@@ -66,26 +66,14 @@ app.set("trust proxy", 1);
 
 // ====================
 // 🌍 CORS (Must be before helmet)
-// ====================
-// CORS configuration with fallback for Railway
-const corsOrigin = process.env.CLIENT_URL || (isProduction ? false : "http://localhost:3000");
-
-if (!corsOrigin && isProduction) {
-  console.warn("⚠️  WARNING: CLIENT_URL not set in production. CORS may not work correctly.");
-}
-
-// Enhanced CORS configuration for Railway
-// cors package automatically handles preflight OPTIONS requests
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: [
+      "https://cafe-frontend-gilt.vercel.app",
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    exposedHeaders: ["Content-Range", "X-Content-Range"],
-    maxAge: 86400, // 24 hours
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
   })
 );
 
@@ -300,7 +288,7 @@ server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${isProduction ? "Production" : "Development"}`);
   console.log(`🚂 Railway: ${isRailway ? "Yes" : "No"}`);
-  if (corsOrigin) {
-    console.log(`🌐 CORS Origin: ${corsOrigin}`);
-  }
+  // if (corsOrigin) {
+  //   console.log(`🌐 CORS Origin: ${corsOrigin}`);
+  // }
 });
