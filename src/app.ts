@@ -36,6 +36,7 @@ const server = http.createServer(app);
 
 // 🔥 Socket Init
 initSocket(server);
+app.set("trust proxy", 1);
 
 // ====================
 // 🔐 SECURITY MIDDLEWARE
