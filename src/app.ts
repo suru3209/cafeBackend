@@ -33,6 +33,10 @@ declare module "express-session" {
 
 const app = express();
 const server = http.createServer(app);
+// ====================
+// 🧠 BODY + SESSION
+// ====================
+app.use(express.json());
 
 // 🔥 Socket Init
 initSocket(server);
@@ -65,10 +69,7 @@ app.use(
   })
 );
 
-// ====================
-// 🧠 BODY + SESSION
-// ====================
-app.use(express.json());
+
 
 app.use(
   session({
