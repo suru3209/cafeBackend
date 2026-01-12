@@ -55,7 +55,11 @@ const PgStore = pgSession(session);
 let sessionConnectionString = process.env.DATABASE_URL || "";
 
 const isProduction = process.env.NODE_ENV === "production";
-const isRailway = process.env.RAILWAY_ENVIRONMENT === "production" || process.env.RAILWAY_ENVIRONMENT_NAME;
+const isRailway = !!(
+  process.env.RAILWAY_ENVIRONMENT ||
+  process.env.RAILWAY_ENVIRONMENT_NAME ||
+  process.env.RAILWAY_PROJECT_ID
+);
 
 // Remove any existing sslmode parameters from connection string
 // We'll handle SSL through Pool config instead
@@ -69,18 +73,34 @@ try {
 }
 
 // Configure SSL based on environment
-const sslConfig = isProduction && !isRailway
+const sslConfig = isRailway
+  ? { rejectUnauthorized: true } // Railway uses proper SSL certificates
+  : isProduction
   ? { rejectUnauthorized: true }
-  : { rejectUnauthorized: false };
+  : { rejectUnauthorized: false }; // Development only
 
 const pool = new pg.Pool({
   connectionString: sessionConnectionString,
   ssl: sslConfig,
-  // Railway/production optimized settings
-  max: 20,
-  min: 2,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000, // Increased timeout for Railway
+  // Railway-optimized settings
+  max: 10, // Reduced for better connection management
+  min: 1,
+  idleTimeoutMillis: 60000, // Keep connections alive longer
+  connectionTimeoutMillis: 20000, // Increased timeout for Railway (20 seconds)
+});
+
+// Enhanced error handling
+pool.on("error", (err) => {
+  console.error("Session store pool error:", err.message);
+});
+
+// Graceful shutdown for session pool
+process.on("SIGINT", async () => {
+  await pool.end();
+});
+
+process.on("SIGTERM", async () => {
+  await pool.end();
 });
 
 // ====================
