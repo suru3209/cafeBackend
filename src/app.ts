@@ -196,8 +196,16 @@ app.get("/", (req, res) => {
 // Health check endpoint for Railway
 app.get("/health", async (req, res) => {
   try {
-    // Test database connection
-    await prisma.$queryRaw`SELECT 1`;
+    // Test database connection with timeout
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Database query timeout")), 10000)
+    );
+    
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1 as health`,
+      timeoutPromise
+    ]);
+    
     res.json({ 
       status: "healthy",
       database: "connected",
@@ -208,6 +216,38 @@ app.get("/health", async (req, res) => {
       status: "unhealthy",
       database: "disconnected",
       error: isProduction ? undefined : (error as Error).message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Database status endpoint
+app.get("/db-status", async (req, res) => {
+  try {
+    const { getDbStatus } = await import("./utils/prisma");
+    const status = getDbStatus();
+    
+    // Try a quick query to verify actual connectivity
+    let querySuccess = false;
+    try {
+      await Promise.race([
+        prisma.$queryRaw`SELECT 1`,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000))
+      ]);
+      querySuccess = true;
+    } catch {
+      querySuccess = false;
+    }
+    
+    res.json({
+      ...status,
+      queryTest: querySuccess ? "success" : "failed",
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      error: (error as Error).message,
       timestamp: new Date().toISOString()
     });
   }
