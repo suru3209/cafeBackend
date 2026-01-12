@@ -1,0 +1,212 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+////////////////////////////////////////////////
+// USER & AUTH
+////////////////////////////////////////////////
+
+model User {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+  role     Role   @default(USER)
+
+  orders     Order[]
+  addresses  Address[]
+  favourites Favourite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+////////////////////////////////////////////////
+// ADDRESS
+////////////////////////////////////////////////
+
+model Address {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label   String // Home, Work
+  address String // Full readable address
+  city    String
+  state   String
+  zipCode String // ✅ PIN / ZIP CODE (e.g. 312001)
+
+  latitude  Float
+  longitude Float
+
+  isDefault Boolean @default(false)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+////////////////////////////////////////////////
+// CATEGORY
+////////////////////////////////////////////////
+
+model Category {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique // coffee, pizza, desserts
+  description String?
+  image       String?
+
+  items MenuItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+////////////////////////////////////////////////
+// MENU ITEM (BASE PRODUCT)
+////////////////////////////////////////////////
+
+model MenuItem {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  basePrice   Int // stored in paise (₹100 = 10000)
+  image       String?
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  isVeg           Boolean
+  isAvailable     Boolean @default(true)
+  preparationMins Int?
+
+  options    MenuOption[]
+  orderItems OrderItem[]
+  favourites Favourite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+////////////////////////////////////////////////
+// MENU OPTIONS (Size, Milk, Sugar, Toppings)
+////////////////////////////////////////////////
+
+model MenuOption {
+  id        String  @id @default(uuid())
+  name      String // Size, Milk Type, Sugar Level
+  required  Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  values MenuOptionValue[]
+}
+
+////////////////////////////////////////////////
+// MENU OPTION VALUES
+////////////////////////////////////////////////
+
+model MenuOptionValue {
+  id         String @id @default(uuid())
+  value      String // Small, Medium, Almond Milk
+  priceDelta Int    @default(0) // paise
+  sortOrder  Int    @default(0)
+
+  optionId String
+  option   MenuOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+}
+
+////////////////////////////////////////////////
+// FAVOURITES
+////////////////////////////////////////////////
+
+model Favourite {
+  id         String @id @default(uuid())
+  userId     String
+  menuItemId String
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, menuItemId])
+}
+
+////////////////////////////////////////////////
+// ORDER
+////////////////////////////////////////////////
+
+model Order {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  addressId String
+  address   Address @relation(fields: [addressId], references: [id])
+
+  subtotal Int
+  tax      Int
+  delivery Int
+  discount Int @default(0)
+  total    Int
+
+  status OrderStatus @default(PENDING)
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+////////////////////////////////////////////////
+// ORDER ITEM (SNAPSHOT)
+////////////////////////////////////////////////
+
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  name     String
+  price    Int
+  quantity Int
+
+  selectedOptions Json
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+////////////////////////////////////////////////
+// ENUMS
+////////////////////////////////////////////////
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
