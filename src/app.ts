@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
+import pgSession from "connect-pg-simple";
 import session from "express-session";
+import pg from "pg";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -39,6 +41,11 @@ initSocket(server);
 // 🔐 SECURITY MIDDLEWARE
 // ====================
 app.use(helmet());
+const PgStore = pgSession(session);
+
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 app.use(
   cors({
@@ -64,15 +71,14 @@ app.use(express.json());
 
 app.use(
   session({
-    name: "aniicones.sid",
+    store: new PgStore({ pool }),
     secret: process.env.SESSION_SECRET!,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // production me true
+      secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 60 * 24,
-      sameSite: "lax",
     },
   })
 );
