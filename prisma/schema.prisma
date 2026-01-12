@@ -193,6 +193,17 @@ model OrderItem {
   order Order @relation(fields: [orderId], references: [id])
 }
 
+
+model Session {
+  sid    String   @id
+  sess   Json
+  expire DateTime
+
+  @@map("session")
+  @@index([expire], name: "IDX_session_expire")
+}
+
+
 ////////////////////////////////////////////////
 // ENUMS
 ////////////////////////////////////////////////

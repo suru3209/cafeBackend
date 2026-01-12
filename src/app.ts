@@ -33,29 +33,51 @@ declare module "express-session" {
 
 const app = express();
 const server = http.createServer(app);
+
 // ====================
-// 🧠 BODY + SESSION
+// 🧠 BODY
 // ====================
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // 🔥 Socket Init
 initSocket(server);
 app.set("trust proxy", 1);
 
 // ====================
-// 🔐 SECURITY MIDDLEWARE
+// 🔐 SECURITY
 // ====================
 app.use(helmet());
+
 const PgStore = pgSession(session);
 
+// Clean connection string and create pool with SSL config for self-signed certs
+let sessionConnectionString = process.env.DATABASE_URL || "";
+
+// Remove any existing sslmode parameters from connection string
+// We'll handle SSL through Pool config instead
+try {
+  const url = new URL(sessionConnectionString);
+  url.searchParams.delete("sslmode");
+  url.searchParams.delete("sslaccept");
+  sessionConnectionString = url.toString();
+} catch {
+  // If URL parsing fails, use original connection string
+}
+
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  connectionString: sessionConnectionString,
+  ssl: { 
+    rejectUnauthorized: false, // Allow self-signed certificates
+  },
 });
 
+// ====================
+// 🌍 CORS
+// ====================
 app.use(
   cors({
-    origin: process.env.CLIENT_URL, // production me apna domain
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
 );
@@ -70,8 +92,9 @@ app.use(
   })
 );
 
-
-
+// ====================
+// 🔑 SESSION
+// ====================
 app.use(
   session({
     store: new PgStore({ pool }),
@@ -115,7 +138,7 @@ app.get("/", (req, res) => {
 });
 
 // ====================
-// ❌ 404 HANDLER
+// ❌ 404
 // ====================
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
