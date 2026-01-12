@@ -5,7 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
+const connect_pg_simple_1 = __importDefault(require("connect-pg-simple"));
 const express_session_1 = __importDefault(require("express-session"));
+const pg_1 = __importDefault(require("pg"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
@@ -24,12 +26,22 @@ const socket_1 = require("./socket");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
+// ====================
+// 🧠 BODY + SESSION
+// ====================
+app.use(express_1.default.json());
 // 🔥 Socket Init
 (0, socket_1.initSocket)(server);
+app.set("trust proxy", 1);
 // ====================
 // 🔐 SECURITY MIDDLEWARE
 // ====================
 app.use((0, helmet_1.default)());
+const PgStore = (0, connect_pg_simple_1.default)(express_session_1.default);
+const pool = new pg_1.default.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
 app.use((0, cors_1.default)({
     origin: process.env.CLIENT_URL, // production me apna domain
     credentials: true,
@@ -41,20 +53,15 @@ app.use((0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000,
     max: 100,
 }));
-// ====================
-// 🧠 BODY + SESSION
-// ====================
-app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
-    name: "aniicones.sid",
+    store: new PgStore({ pool }),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: false, // production me true
+        secure: process.env.NODE_ENV === "production",
         maxAge: 1000 * 60 * 60 * 24,
-        sameSite: "lax",
     },
 }));
 // ====================

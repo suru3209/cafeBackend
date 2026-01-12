@@ -50,6 +50,7 @@ const PgStore = pgSession(session);
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
 app.use(
