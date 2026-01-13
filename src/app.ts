@@ -152,17 +152,18 @@ app.use(
   session({
     name: "aniicones.sid",
     store: new PgStore({ pool }),
-    secret: process.env.SESSION_SECRET || "fallback-secret-change-in-production",
+    secret: process.env.SESSION_SECRET!,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: true,        // HTTPS required
+      sameSite: "none",   // 🔥 MOST IMPORTANT
       maxAge: 1000 * 60 * 60 * 24,
     },
   })
 );
+
 
 // ====================
 // 📁 STATIC FILES
