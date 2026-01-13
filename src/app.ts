@@ -150,6 +150,7 @@ app.use(
 // ====================
 app.use(
   session({
+    name: "aniicones.sid",
     store: new PgStore({ pool }),
     secret: process.env.SESSION_SECRET || "fallback-secret-change-in-production",
     resave: false,
