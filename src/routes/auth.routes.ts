@@ -94,7 +94,6 @@ router.post("/login", async (req, res) => {
 });
 
 //me
-
 router.get("/me", isAuth, async (req, res) => {
   try {
     if (!req.session.userId) return res.status(401).json({ user: null });
@@ -129,9 +128,10 @@ router.post("/logout", (req, res) => {
 
     res.clearCookie("aniicones.sid", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
     });
+    
 
     res.json({ success: true });
   });

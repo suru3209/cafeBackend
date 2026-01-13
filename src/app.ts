@@ -156,10 +156,11 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax", // Railway needs 'none' for cross-origin
+      secure: true,          // HTTPS required
+      sameSite: "none",     // cross-site cookie
       maxAge: 1000 * 60 * 60 * 24,
-    },
+    }
+    ,
   })
 );
 
