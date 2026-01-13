@@ -156,11 +156,10 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,          // HTTPS required
-      sameSite: "none",     // cross-site cookie
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24,
-    }
-    ,
+    },
   })
 );
 
